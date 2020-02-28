@@ -1,10 +1,4 @@
-# ROS Node Example
-
-| Service | Status |
-| ------- | ------ |
-| Unit Tests/Build | [![Travis-CI](https://api.travis-ci.org/tdenewiler/node_example.svg?branch=master)](https://travis-ci.org/tdenewiler/node_example/branches) |
-| Code Coverage | [![codecov](https://codecov.io/gh/tdenewiler/node_example/branch/master/graph/badge.svg)](https://codecov.io/gh/tdenewiler/node_example) |
-| Better Code Hub | [![BCH compliance](https://bettercodehub.com/edge/badge/tdenewiler/node_example?branch=master)](https://bettercodehub.com/) |
+# Node Example
 
 [ROS](http://ros.org) allows for creating nodes that communicate with each other.
 It is very common to use C++ and Python to write these nodes.
@@ -23,9 +17,6 @@ Those features include:
 
 More ideas that are explored are deploying documentation using [GitHub Pages](https://pages.github.com/),
 writing unit tests, and checking build status and code coverage.
-
-Additional documentation at
-[http://tdenewiler.github.io/node_example](http://tdenewiler.github.io/node_example).
 
 ## Description
 
@@ -48,12 +39,13 @@ To start all the nodes run
 You should see two windows open: `rqt_reconfigure` and `rqt_console`.
 They will look like the following screenshots.
 
-  ![Reconfigure GUI](docs/images/reconfigure.png)
+  ![Reconfigure GUI](images/reconfigure.png)
 
-  ![Console GUI](docs/images/console.png)
+  ![Console GUI](images/console.png)
 
-At this point you can modify the strings or numbers in the reconfigure GUI and you should see those changes show up in the console GUI.
-There are `enable` parameters in each of the talker nodes so that the nodes can effectively be paused and resumed during runtime.
+At this point you can modify the strings or numbers in the reconfigure GUI and you should see those changes show
+up in the console GUI.
+There are `enable` parameters in each of the talker nodes so that the nodes can effectively be paused during runtime.
 This is a nice feature that allows easily turning system components on and off during operation for whatever reason
 (such as wanting to run multiple similar nodes side-by-side for comparison without using too many CPU/RAM resources,
 only running certain nodes when some conditions are met, etc.).
@@ -89,6 +81,3 @@ This tool provides some measure of confidence that the existing unit tests will 
 
 The configuration file for Travis is in this repository at [.travis.yml](.travis.yml).
 That file contains build flags to ensure that unit tests run and that code coverage results can be calculated.
-
-## Deploying GitHub Pages
-Deployed using the command `mkdocs gh-deploy`.
