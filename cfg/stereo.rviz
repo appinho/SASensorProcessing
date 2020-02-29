@@ -91,7 +91,7 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 75.2347794
+        Max Value: 235.735657
         Min Value: -5.01565218
         Value: true
       Axis: Z
@@ -111,7 +111,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 1
+      Size (m): 0.899999976
       Style: Flat Squares
       Topic: /kitti/stereo_pointcloud
       Unreliable: false
@@ -143,7 +143,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1516.79907
+      Distance: 1785.12476
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -158,10 +158,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.56979632
+      Pitch: 1.54479599
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.0214390941
+      Yaw: 6.27962399
     Saved: ~
 Window Geometry:
   Displays:

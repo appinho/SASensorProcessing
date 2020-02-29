@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from dynamic_reconfigure.server import Server as DynamicReconfigureServer
-from stereo_params.cfg import StereoParamsConfig as ConfigType
+from stereo_image.cfg import StereoParamsConfig as ConfigType
 from sensor_msgs.msg import PointCloud
 from geometry_msgs.msg import Point32
 import std_msgs.msg
@@ -19,8 +19,8 @@ import std_msgs.msg
 class StereoImageNode(object):
 
     def __init__(self):
-        self.numDisparities = rospy.get_param('~numDisparities', 16)
-        self.blockSize = rospy.get_param('~blockSize', 15)
+        self.numDisparities = 16 * rospy.get_param('~numDisparities', 1)
+        self.blockSize = 2 * rospy.get_param('~blockSize', 5) + 5
         self.baseline = 0.54
         self.focal = 721
         self.image_width = 1242
@@ -79,11 +79,12 @@ class StereoImageNode(object):
    
     def reconfigure_cb(self, config, dummy):
 
-        rospy.loginfo("""Reconfiugre Request: {int_param}, {double_param},\ 
-          {str_param}, {bool_param}, {size}""".format(**config))
-        self.numDisparities = config["numDisparities"]
-        self.blockSize = config["blockSize"]
-
+        self.numDisparities = config["numDisparities"] * 16
+        self.blockSize = 2 * config["blockSize"] + 5
+        self.stereo = cv2.StereoBM_create(
+            numDisparities=self.numDisparities, 
+            blockSize=self.blockSize)
+        rospy.loginfo("""Reconfiugre Request: {numDisparities}, {blockSize},""".format(**config))
         # Check to see if node should be started or stopped.
         # if self.enable != config["enable"]:
         #     if config["enable"]:
