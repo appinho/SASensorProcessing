@@ -1,5 +1,5 @@
 <package format="2">
-  <name>node_example</name>
+  <name>stereo_image</name>
   <version>0.0.1</version>
   <description>
     Publishers and subscribers that use the parameter server, dynamic
