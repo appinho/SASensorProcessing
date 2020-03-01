@@ -11,13 +11,15 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 
-//#include <opencv2/calib3d/calib3d.hpp>
 #include <image_geometry/stereo_camera_model.h>
+#include <stereo_msgs/DisparityImage.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace stereo_image
 {
 
 using namespace sensor_msgs;
+using namespace stereo_msgs;
 using namespace message_filters::sync_policies;
 
 class Stereo
@@ -34,6 +36,12 @@ class Stereo
                 const ImageConstPtr& r_image_msg,
                 const CameraInfoConstPtr& r_info_msg);
 
+  void processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rect,
+                        DisparityImage& disparity);
+  void processPoints2(const DisparityImage& disparity,
+                      const cv::Mat& color, const std::string& encoding,
+                      PointCloud2& points);
+
   int convertNumDisparities(const int num_disparities);
   int convertBlockSize(const int block_size);
   
@@ -47,6 +55,7 @@ class Stereo
   typedef message_filters::Synchronizer<ExactPolicy> ExactSync;
   ExactSync exact_sync_;
 
+  ros::Publisher pub_disparity_;
   ros::Publisher pub_disparity_image_;
 
   dynamic_reconfigure::Server<stereo_image::StereoParamsConfig> dr_srv_;
