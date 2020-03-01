@@ -46,7 +46,6 @@ void Stereo::callback(const ImageConstPtr& l_image_msg,
                       const ImageConstPtr& r_image_msg,
                       const CameraInfoConstPtr& r_info_msg)
 {
-  ROS_INFO("Callback");
 
   // Update the camera model
   model_.fromCameraInfo(l_info_msg, r_info_msg);
@@ -114,9 +113,7 @@ void Stereo::callback(const ImageConstPtr& l_image_msg,
 void Stereo::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rect,
                               DisparityImage& disparity)
 {
-  ROS_INFO("processDisparity");
-  ROS_INFO("%d", num_disparities_);
-  ROS_INFO("%d", block_size_);
+
   // Fixed-point disparity is 16 times the true value: d = d_fp / 16.0 = x_l - x_r.
   static const int DPP = 16; // disparities per pixel
   static const double inv_dpp = 1.0 / DPP;
@@ -124,7 +121,6 @@ void Stereo::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rec
   // Block matcher produces 16-bit signed (fixed point) disparity image
   block_matcher_->compute(left_rect, right_rect, disparity16_);
   //sg_block_matcher_->compute(left_rect, right_rect, disparity16_);
-  ROS_INFO("Disparity computed");
 
   // Fill in DisparityImage image data, converting to 32-bit float
   sensor_msgs::Image& dimage = disparity.image;
@@ -156,7 +152,6 @@ void Stereo::processPoints2(const DisparityImage& disparity,
                             const cv::Mat& color, const std::string& encoding,
                             PointCloud2& points)
 {
-  ROS_WARN("processPoints2");
   
   // Calculate dense point cloud
   const sensor_msgs::Image& dimage = disparity.image;
@@ -269,9 +264,9 @@ void Stereo::configCallback(stereo_image::StereoParamsConfig &config, uint32_t l
 {
   num_disparities_ = convertNumDisparities(config.numDisparities);
   block_size_ = convertBlockSize(config.blockSize);
-  ROS_INFO("Reconfigure Request");
-  ROS_INFO("numDisparities %d", num_disparities_);
-  ROS_INFO("blockSize %d", block_size_);
+  ROS_DEBUG("Reconfigure Request");
+  ROS_DEBUG("numDisparities %d", num_disparities_);
+  ROS_DEBUG("blockSize %d", block_size_);
   block_matcher_ = cv::StereoBM::create(num_disparities_, block_size_);
 }
 
