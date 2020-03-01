@@ -1,3 +1,5 @@
 *.cmake
 *.bin
 *.pyc
+bin
+build

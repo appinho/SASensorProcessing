@@ -95,32 +95,48 @@ class StereoImageNode(object):
 
         stereo_pointcloud = PointCloud()
         counter = 0
-        min_x = 1000
-        max_x = 0
-        min_y = 1000
-        max_y = 0
-        min_z = 1000
-        max_z = 0
+        min_x = [1000,0,0,-1]
+        max_x = [-1000,0,0,-1]
+        min_y = [1000,0,0,-1]
+        max_y = [-1000,0,0,-1]
+        min_z = [1000,0,0,-1]
+        max_z = [-1000,0,0,-1]
         depth_image = np.zeros(disparity.shape)
         for u, row in enumerate(disparity):
             for v, pixel in enumerate(row):
                 if pixel > 0:
                     point = self.model.projectPixelTo3d((u,v), pixel)
-                    depth_image[u][v] = point[2]
-                    point32 = Point32(point[0], point[1], point[2])
-                    stereo_pointcloud.points.append(point32)
-                    counter +=1
-                    min_x = min(min_x, point32.x)
-                    max_x = max(max_x, point32.x)
-                    min_y = min(min_y, point32.y)
-                    max_y = max(max_y, point32.y)
-                    min_z = min(min_z, point32.z)
-                    max_z = max(max_z, point32.z)
+                    depth = point[2]
+                    depth_image[u][v] = depth
+                    if depth > 0 and depth < 70:
+                        point32 = Point32(point[0], point[1], point[2])
+                        stereo_pointcloud.points.append(point32)
+                        counter +=1
+                        if min_x[0] > point32.x:
+                            min_x = [point32.x,u,v,pixel]
+                            #print("MINX",u,v,point)
+                        if min_y[0] > point32.y:
+                            min_y = [point32.y,u,v,pixel]
+                            #print("MINY", u,v,point)
+                        if min_z[0] > point32.z:
+                            min_z = [point32.z,u,v,pixel]
+                            #print("MINZ",u,v,point)
+                        if max_x[0] < point32.x:
+                            max_x = [point32.x,u,v,pixel]
+                            #print("MAXX",u,v,point)
+                        if max_y[0] < point32.y:
+                            max_y = [point32.y,u,v,pixel]
+                            #print("MAXY",u,v,point)
+                        if max_z[0] < point32.z:
+                            max_z = [point32.z,u,v,pixel]
+                            #print("MAXZ",u,v,point)
                     #if counter % 10000 == 0:
                     #    print(u,v,pixel,point)
-        rospy.loginfo("Min Max %f %f %f %f %f %f" % (min_x, max_x, min_y, max_y, min_z, max_z))
+        print("X",min_x, max_x)
+        print("Y",min_y, max_y)
+        print("Z",min_z, max_z)
         rospy.loginfo("Depth completition rate %f", counter / disparity.shape[0] / disparity.shape[1])
-
+        """
         plt.figure(1)
         plt.subplot(211)
         plt.imshow(disparity, 'gray')
@@ -129,7 +145,7 @@ class StereoImageNode(object):
         mng = plt.get_current_fig_manager()
         mng.resize(*mng.window.maxsize())
         plt.show()
-        
+        """
         depth_image8 =  depth_image.astype(np.uint8)
         try:
             self.depth_image_pub.publish(
@@ -173,7 +189,7 @@ class StereoImageNode(object):
 
 if __name__ == '__main__':
     
-    rospy.init_node('stereo_image_node')
+    rospy.init_node('pystereo')
     try:
         StereoImageNode()
     except rospy.ROSInterruptException:

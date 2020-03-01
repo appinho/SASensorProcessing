@@ -11,6 +11,12 @@ catkin_package(
   CATKIN_DEPENDS dynamic_reconfigure message_runtime rosgraph_msgs rospy std_msgs
 )
 
+include_directories(include ${catkin_INCLUDE_DIRS})
+
+add_executable(stereo src/nodes/stereo_node.cpp src/stereo.cpp)
+target_link_libraries(stereo ${catkin_LIBRARIES})
+add_dependencies(stereo stereo_image_gencfg )
+
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
@@ -22,7 +28,13 @@ install(DIRECTORY include/${PROJECT_NAME}/
   FILES_MATCHING PATTERN "*.h"
 )
 
-install(PROGRAMS src/stereo_image_node.py src/pytalker.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(PROGRAMS src/pystereo.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(TARGETS stereo
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
 
 install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
