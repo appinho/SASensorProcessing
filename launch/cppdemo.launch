@@ -15,8 +15,8 @@
   </node>
 
   <include file="$(find stereo_image)/launch/tools.launch"/>
-  <!--
+  
   <node pkg="rviz" type="rviz" name="my_rviz"
   args="-d $(find stereo_image)cfg/stereo.rviz"/>  
-  -->
+  
 </launch>

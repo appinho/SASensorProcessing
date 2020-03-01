@@ -1,14 +1,27 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(stereo_image)
 
-find_package(catkin REQUIRED COMPONENTS dynamic_reconfigure message_generation rosgraph_msgs rospy std_msgs message_filters)
+find_package(catkin REQUIRED 
+  dynamic_reconfigure
+  message_generation
+  rosgraph_msgs
+  rospy
+  roscpp
+  std_msgs
+  message_filters 
+  image_geometry
+  cv_bridge
+)
+
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 generate_dynamic_reconfigure_options(
   cfg/stereo_params.cfg
 )
 
 catkin_package(
-  CATKIN_DEPENDS dynamic_reconfigure message_runtime rosgraph_msgs rospy std_msgs
+  CATKIN_DEPENDS dynamic_reconfigure message_runtime rosgraph_msgs rospy roscpp std_msgs image_geometry
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

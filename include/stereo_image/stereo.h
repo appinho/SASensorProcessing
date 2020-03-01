@@ -11,6 +11,9 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 
+//#include <opencv2/calib3d/calib3d.hpp>
+#include <image_geometry/stereo_camera_model.h>
+
 namespace stereo_image
 {
 
@@ -26,6 +29,14 @@ class Stereo
  private:
   void configCallback(stereo_image::StereoParamsConfig &config, uint32_t level);
 
+  void callback(const ImageConstPtr& l_image_msg,
+                const CameraInfoConstPtr& l_info_msg,
+                const ImageConstPtr& r_image_msg,
+                const CameraInfoConstPtr& r_info_msg);
+
+  int convertNumDisparities(const int num_disparities);
+  int convertBlockSize(const int block_size);
+  
   ros::NodeHandle nh_;
 
   message_filters::Subscriber<Image> sub_left_image_;
@@ -36,19 +47,17 @@ class Stereo
   typedef message_filters::Synchronizer<ExactPolicy> ExactSync;
   ExactSync exact_sync_;
 
-  void callback(const ImageConstPtr& l_image_msg,
-                const CameraInfoConstPtr& l_info_msg,
-                const ImageConstPtr& r_image_msg,
-                const CameraInfoConstPtr& r_info_msg);
-
-  ros::Publisher pub_;
+  ros::Publisher pub_disparity_image_;
 
   dynamic_reconfigure::Server<stereo_image::StereoParamsConfig> dr_srv_;
 
+  image_geometry::StereoCameraModel model_;
+  cv::Ptr<cv::StereoBM> block_matcher_;
+  cv::Ptr<cv::StereoSGBM> sg_block_matcher_;
 
-  int convertNumDisparities(const int num_disparities);
+  cv::Mat_<int16_t> disparity16_;
+
   int num_disparities_;
-  int convertBlockSize(const int block_size);
   int block_size_;
 };
 }
