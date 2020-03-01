@@ -7,7 +7,7 @@
 
   <arg name="scenario" default="0059"/>
 
-  <node pkg="rosbag" type="play" name="player" args="-r 0.1 -d 2 $(arg home_dir)/kitti_data/$(arg scenario)/synchronized_data.bag"/>
+  <node pkg="rosbag" type="play" name="player" args="-r 0.4 -d 2 $(arg home_dir)/kitti_data/$(arg scenario)/synchronized_data.bag"/>
 
   <node pkg="stereo_image" type="stereo" name="stereo" output="screen">
     <param name="numDisparities" value="$(arg numDisparities)"/>
