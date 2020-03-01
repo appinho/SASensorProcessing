@@ -2,7 +2,8 @@
 
 namespace stereo_image
 {
-Stereo::Stereo(ros::NodeHandle nh) : nh_(nh), num_disparities_(2), block_size_(8)
+Stereo::Stereo(ros::NodeHandle nh) : 
+  nh_(nh)
 {
   // Set up a dynamic reconfigure server.
   // Do this before parameter server, else some of the parameter server values can be overwritten.
@@ -13,6 +14,8 @@ Stereo::Stereo(ros::NodeHandle nh) : nh_(nh), num_disparities_(2), block_size_(8
   // Initialize node parameters from launch file or command line. Use a private node handle so that multiple instances
   // of the node can be run simultaneously while using different parameters.
   ros::NodeHandle pnh("~");
+  num_disparities_ = convertNumDisparities(2);
+  block_size_ = convertBlockSize(8);
   pnh.param("numDisparities", num_disparities_, num_disparities_);
   pnh.param("blockSize", block_size_, block_size_);
 
@@ -20,8 +23,19 @@ Stereo::Stereo(ros::NodeHandle nh) : nh_(nh), num_disparities_(2), block_size_(8
 
 void Stereo::configCallback(stereo_image::StereoParamsConfig &config, uint32_t level __attribute__((unused)))
 {
-  num_disparities_ = config.numDisparities;
-  block_size_ = config.blockSize;
+  num_disparities_ = convertNumDisparities(config.numDisparities);
+  block_size_ = convertBlockSize(config.blockSize);
+  ROS_INFO("Reconfigure Request");
+  ROS_INFO("numDisparities %d", num_disparities_);
+  ROS_INFO("blockSize %d", block_size_);
+}
+
+int Stereo::convertNumDisparities(const int num_disparities){
+  return 16 * num_disparities;
+}
+
+int Stereo::convertBlockSize(const int block_size){
+  return 2 * block_size + 5;
 }
 
 }

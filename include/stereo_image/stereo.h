@@ -22,8 +22,10 @@ class Stereo
 
   dynamic_reconfigure::Server<stereo_image::StereoParamsConfig> dr_srv_;
 
-  int num_disparities_;
 
+  int convertNumDisparities(const int num_disparities);
+  int num_disparities_;
+  int convertBlockSize(const int block_size);
   int block_size_;
 };
 }
