@@ -4,8 +4,13 @@ ROS node to create pointcloud out of stereo images from the KITTI Vision Benchma
 
 ## Demo
 
-![Pointclouds](docs/images/stereo_pointcloud.png)
+<p align="center">
+  <img src="./docs/videos/stereo.gif">
+</p>
 
+<!--
+![Pointclouds](docs/images/stereo_pointcloud.png)
+-->
 
 ## Usage
 
