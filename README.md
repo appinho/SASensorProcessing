@@ -30,4 +30,4 @@ roslaunch stereo_image demo.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
 
 ## Sources
 
-[![ROS Image processing wiki](stereo_image_proc)
+![ROS Image processing wiki](stereo_image_proc)
