@@ -34,6 +34,7 @@ Stereo::Stereo(ros::NodeHandle nh) :
 
   pub_disparity_ = nh.advertise<DisparityImage>("/kitti/disparity", 1);
   pub_disparity_image_ = nh_.advertise<Image>("/kitti/disparity_image", 1);
+  pub_points2_ = nh_.advertise<PointCloud2>("/kitti/stereo_pointcloud", 1);
 
   block_matcher_ = cv::StereoBM::create(num_disparities_, block_size_);
   sg_block_matcher_ = cv::StereoSGBM::create(1, 1, 10);
@@ -72,6 +73,7 @@ void Stereo::callback(const ImageConstPtr& l_image_msg,
   const cv::Mat_<uint8_t> r_image = cv_bridge::toCvShare(r_image_msg, sensor_msgs::image_encodings::MONO8)->image;
 
   // Perform block matching to find the disparities
+  // TODO PASS MODEL_
   processDisparity(l_image, r_image, *disp_msg);
 
   // Adjust for any x-offset between the principal points: d' = d - (cx_l - cx_r)
@@ -94,8 +96,18 @@ void Stereo::callback(const ImageConstPtr& l_image_msg,
   pub_disparity_image_.publish(cv_bridge_disparity_image.toImageMsg());
 
 
-  PointCloud2 points;
-  processPoints2(*disp_msg, l_image, "mono8", points);
+  PointCloud2Ptr points_msg = boost::make_shared<PointCloud2>();
+  points_msg->header = disp_msg->header;
+  // Calculate point cloud
+  points_msg->height = disp_msg->image.height;
+  points_msg->width  = disp_msg->image.width;
+  points_msg->is_bigendian = false;
+  points_msg->is_dense = false; // there may be invalid points
+  // TODO PASS MODEL_
+  processPoints2(*disp_msg, l_image, "mono8", *points_msg);
+
+  // TODO DIE POINTS RGB
+  pub_points2_.publish(points_msg);
   
 }
 
@@ -145,11 +157,11 @@ void Stereo::processPoints2(const DisparityImage& disparity,
                             PointCloud2& points)
 {
   ROS_WARN("processPoints2");
-  /*
+  
   // Calculate dense point cloud
   const sensor_msgs::Image& dimage = disparity.image;
   const cv::Mat_<float> dmat(dimage.height, dimage.width, (float*)&dimage.data[0], dimage.step);
-  model.projectDisparityImageTo3d(dmat, dense_points_, true);
+  model_.projectDisparityImageTo3d(dmat, dense_points_, true);
 
   // Fill in sparse point cloud message
   points.height = dense_points_.rows;
@@ -243,7 +255,14 @@ void Stereo::processPoints2(const DisparityImage& disparity,
   else {
     ROS_WARN("Could not fill color channel of the point cloud, unrecognized encoding '%s'", encoding.c_str());
   }
-  */
+  
+}
+
+bool Stereo::isValidPoint(const cv::Vec3f& pt)
+{
+  // Check both for disparities explicitly marked as invalid (where OpenCV maps pt.z to MISSING_Z)
+  // and zero disparities (point mapped to infinity).
+  return pt[2] != image_geometry::StereoCameraModel::MISSING_Z && !std::isinf(pt[2]);
 }
 
 void Stereo::configCallback(stereo_image::StereoParamsConfig &config, uint32_t level __attribute__((unused)))

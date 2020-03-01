@@ -41,7 +41,7 @@ class Stereo
   void processPoints2(const DisparityImage& disparity,
                       const cv::Mat& color, const std::string& encoding,
                       PointCloud2& points);
-
+  bool isValidPoint(const cv::Vec3f& pt);
   int convertNumDisparities(const int num_disparities);
   int convertBlockSize(const int block_size);
   
@@ -56,7 +56,8 @@ class Stereo
   ExactSync exact_sync_;
 
   ros::Publisher pub_disparity_;
-  ros::Publisher pub_disparity_image_;
+  ros::Publisher pub_disparity_image_;;
+  ros::Publisher pub_points2_;
 
   dynamic_reconfigure::Server<stereo_image::StereoParamsConfig> dr_srv_;
 
@@ -65,6 +66,7 @@ class Stereo
   cv::Ptr<cv::StereoSGBM> sg_block_matcher_;
 
   cv::Mat_<int16_t> disparity16_;
+  cv::Mat_<cv::Vec3f> dense_points_;
 
   int num_disparities_;
   int block_size_;
