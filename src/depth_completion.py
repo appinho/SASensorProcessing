@@ -4,9 +4,10 @@
 import rospy
 
 # from dynamic_reconfigure.server import Server as DynamicReconfigureServer
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2, Image
+from cv_bridge import CvBridge, CvBridgeError
 
-# from stereo_image.cfg import LidarDepthCompletionConfig as ConfigType
+# from stereo_image.cfg import DepthCompletionConfig as ConfigType
 
 import glob
 import os
@@ -22,18 +23,26 @@ import numpy as np
 
 
 
-class LidarDepthCompletion(object):
+class DepthCompletion(object):
     """Node example class."""
 
     def __init__(self):
 
+        self.bridge = CvBridge()
+
         self.sub = rospy.Subscriber('/kitti/velo/pointcloud', PointCloud2, self.callback)
         #self.server = DynamicReconfigureServer(ConfigType, self.reconfigure_cb)
 
-        # self.pub = rospy.Publisher('example', LidarDepthCompletionData, queue_size=10)
+        self.pub = rospy.Publisher('/kitti/depth_completion', Image, queue_size=10)
 
     def callback(self, pointcloud):
-        print("callback")
+        
+        cv_image = np.zeros([400, 600, 3], dtype=np.uint8)
+
+        try:
+            self.pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
+        except CvBridgeError as e:
+            print(e)
 
 
     def reconfigure_cb(self, config, dummy):
@@ -60,7 +69,7 @@ if __name__ == '__main__':
     rospy.init_node('lidar_depth_completion')
 
     try:
-        LidarDepthCompletion()
+        DepthCompletion()
     except rospy.ROSInterruptException as e:
         print(e)
 
