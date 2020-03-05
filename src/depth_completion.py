@@ -4,7 +4,7 @@
 import rospy
 
 # from dynamic_reconfigure.server import Server as DynamicReconfigureServer
-from sensor_msgs.msg import PointCloud2, Image
+from sensor_msgs.msg import PointCloud2, Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 
 # from stereo_image.cfg import DepthCompletionConfig as ConfigType
@@ -30,12 +30,13 @@ class DepthCompletion(object):
 
         self.bridge = CvBridge()
 
-        self.sub = rospy.Subscriber('/kitti/velo/pointcloud', PointCloud2, self.callback)
+        self.sub_pc = rospy.Subscriber('/kitti/velo/pointcloud', PointCloud2, self.callback_pc)
+        self.sub_ci = rospy.Subscriber('/kitti/camera_gray_left/camera_info', CameraInfo, self.callback_ci)
         #self.server = DynamicReconfigureServer(ConfigType, self.reconfigure_cb)
 
         self.pub = rospy.Publisher('/kitti/depth_completion', Image, queue_size=10)
 
-    def callback(self, pointcloud):
+    def callback_pc(self, pointcloud):
         
         cv_image = np.zeros([400, 600, 3], dtype=np.uint8)
 
@@ -44,6 +45,11 @@ class DepthCompletion(object):
         except CvBridgeError as e:
             print(e)
 
+    def callback_ci(self, camera_info):
+
+        cam_to_rectcam = camera_info.R
+        rectcam_to_image = camera_info.P
+        print(camera_info.P)
 
     def reconfigure_cb(self, config, dummy):
 
