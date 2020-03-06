@@ -1,16 +1,19 @@
-# SAStereoImage
+# SASensorProcessing
 
-ROS node to create pointcloud out of stereo images from the KITTI Vision Benchmark Suite  
+ROS node to create pointcloud out of stereo images and complete sparse pointclouds from the KITTI Vision Benchmark Suite  
 
-## Demo
+## Demos
+### Stereo Vision
 
 <p align="center">
   <img src="./docs/videos/stereo.gif">
 </p>
 
-<!--
-![Pointclouds](docs/images/stereo_pointcloud.png)
--->
+### Depth Completion
+
+<p align="center">
+  <img src="./docs/videos/depth_completion.gif">
+</p>
 
 ## Usage
 
@@ -21,13 +24,18 @@ To run it use the following commands:
 
 ```
 cd ~/catkin_ws/src
-git clone https://github.com/appinho/SARosPerceptionKitti.git
+git clone https://github.com/appinho/SASensorProcessing.git
 cd ~/catkin_ws
 catkin_make
 source devel/setup.bash
-roslaunch stereo_image demo.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
+```
+
+```
+roslaunch sensor_processing stereo_vision.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
+roslaunch sensor_processing depth_completion.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
 ```
 
 ## Sources
 
 ![ROS Image processing wiki](stereo_image_proc)
+![Depth completion paper](https://arxiv.org/pdf/1802.00036v1.pdf)
