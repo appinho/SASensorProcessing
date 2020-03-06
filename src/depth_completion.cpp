@@ -1,8 +1,9 @@
-#include <stereo_image/depth_completion.h>
+#include "sensor_processing/depth_completion.h"
+
 #include <Eigen/Dense>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
-namespace stereo_image
+namespace sensor_processing
 {
 DepthCompletion::DepthCompletion(ros::NodeHandle nh) : 
   nh_(nh),
@@ -11,7 +12,7 @@ DepthCompletion::DepthCompletion(ros::NodeHandle nh) :
 {
   // Set up a dynamic reconfigure server.
   // Do this before parameter server, else some of the parameter server values can be overwritten.
-  dynamic_reconfigure::Server<stereo_image::DepthCompletionParamsConfig>::CallbackType cb;
+  dynamic_reconfigure::Server<sensor_processing::DepthCompletionParamsConfig>::CallbackType cb;
   cb = boost::bind(&DepthCompletion::configCallback, this, _1, _2);
   dr_srv_.setCallback(cb);
 
@@ -146,7 +147,7 @@ void DepthCompletion::callback(const PointCloud2ConstPtr& pc_msg,
   pub_depth_image_.publish(cv_bridge_depth_image.toImageMsg());
 }
 
-void DepthCompletion::configCallback(stereo_image::DepthCompletionParamsConfig &config, uint32_t level)
+void DepthCompletion::configCallback(sensor_processing::DepthCompletionParamsConfig &config, uint32_t level)
 {
 
 }

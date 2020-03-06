@@ -1,0 +1,22 @@
+<launch>
+
+  <arg name="numDisparities" default="2"/>
+  <arg name="blockSize" default="8"/>
+
+  <arg name="home_dir" default="/home/appinho"/>
+
+  <arg name="scenario" default="0059"/>
+
+  <node pkg="rosbag" type="play" name="player" args="-r 0.06 -d 2 $(arg home_dir)/kitti_data/$(arg scenario)/synchronized_data.bag"/>
+
+  <node pkg="sensor_processing" type="stereo_vision" name="stereo_vision" output="screen">
+    <param name="numDisparities" value="$(arg numDisparities)"/>
+    <param name="blockSize" value="$(arg blockSize)"/>
+  </node>
+  
+  <include file="$(find sensor_processing)/launch/tools.launch"/>
+  
+  <node pkg="rviz" type="rviz" name="my_rviz"
+  args="-d $(find sensor_processing)cfg/stereo_vision.rviz"/>  
+  
+</launch>
