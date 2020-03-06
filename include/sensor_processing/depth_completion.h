@@ -38,7 +38,21 @@ class DepthCompletion
                 const CameraInfoConstPtr& l_info_msg,
                 const ImageConstPtr& l_image_msg);
 
-  void processDepthCompletion();
+  void processDepthCompletion(
+    const CameraInfoConstPtr& cam_info, 
+    const cv::Mat depth_image, 
+    cv::Mat & depth_completion_image);
+
+  void pointCloudToDepthImage(
+    const PointCloud2ConstPtr& pc,
+    const CameraInfoConstPtr& cam_info,
+    cv::Mat& depth_image);
+  void depthImageToPointCloud(
+    const cv::Mat depth_image,
+    const CameraInfoConstPtr& cam_info,
+    PointCloud2 & pc);
+
+  int convertFullKernelSize(const int full_kernel_size);
 
   
   ros::NodeHandle nh_;
@@ -50,13 +64,16 @@ class DepthCompletion
   typedef message_filters::Synchronizer<ExactPolicy> ExactSync;
   ExactSync exact_sync_;
 
-  ros::Publisher pub_completed_image_;
   ros::Publisher pub_depth_image_;
+  ros::Publisher pub_completion_image_;
   ros::Publisher pub_completed_pointcloud_;
 
   dynamic_reconfigure::Server<sensor_processing::DepthCompletionParamsConfig> dr_srv_;
 
   tf::TransformListener listener_;
+
+  int diamond_kernel_size_;
+  int full_kernel_size_;
 };
 }
 

@@ -28,9 +28,9 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(stereo src/nodes/stereo_vision_node.cpp src/stereo_vision.cpp)
-target_link_libraries(stereo ${catkin_LIBRARIES})
-add_dependencies(stereo stereo_image_gencfg)
+add_executable(stereo_vision src/nodes/stereo_vision_node.cpp src/stereo_vision.cpp)
+target_link_libraries(stereo_vision ${catkin_LIBRARIES})
+add_dependencies(stereo_vision stereo_image_gencfg)
 
 add_executable(depth_completion src/nodes/depth_completion_node.cpp src/depth_completion.cpp)
 target_link_libraries(depth_completion ${catkin_LIBRARIES})
@@ -49,7 +49,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 install(PROGRAMS src/pystereo.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-install(TARGETS stereo
+install(TARGETS stereo_vision
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
