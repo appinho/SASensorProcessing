@@ -59,7 +59,7 @@ class StereoVision
   ros::Publisher pub_disparity_image_;;
   ros::Publisher pub_points2_;
 
-  dynamic_reconfigure::Server<sensor_processing::StereoParamsConfig> dr_srv_;
+  dynamic_reconfigure::Server<sensor_processing::StereoVisionParamsConfig> dr_srv_;
 
   image_geometry::StereoCameraModel model_;
   cv::Ptr<cv::StereoBM> block_matcher_;

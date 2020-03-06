@@ -261,7 +261,7 @@ bool StereoVision::isValidPoint(const cv::Vec3f& pt)
   return pt[2] != image_geometry::StereoCameraModel::MISSING_Z && !std::isinf(pt[2]);
 }
 
-void StereoVision::configCallback(sensor_processing::StereoParamsConfig &config, uint32_t level __attribute__((unused)))
+void StereoVision::configCallback(sensor_processing::StereoVisionParamsConfig &config, uint32_t level __attribute__((unused)))
 {
   num_disparities_ = convertNumDisparities(config.numDisparities);
   block_size_ = convertBlockSize(config.blockSize);
