@@ -232,42 +232,54 @@ void DepthCompletion::processDepthCompletion(
     {
       const float & depth = depth_image.at<float>(v, u);
       if (depth == 0) continue;
-      for(int i = -diamond_kernel_size_; i <=diamond_kernel_size_; i++)
-      {
-        int r = diamond_kernel_size_ - std::abs(i);
-        for(int j = r; j <= r; j++)
-        {
-          int x = u + i;
-          int y = v + j;
-          if (inImage(cam_info, x, y))
-          {
-            inv_depth_image.at<float>(y, x) = 100 - depth;
-          }
-        }
-      }
+        inv_depth_image.at<float>(v, u) = 100 - depth;
     }
   }
-  //cv::Mat l_image = cv_bridge::toCvShare(l_image_msg, sensor_msgs::image_encodings::BGR8)->image;
-  //inv_depth_image.at<float>(y, x) = 100 - cam_z;
-  //l_image.at<cv::Vec3b>(y, x) = cv::Vec3b(r, g, b);
 
-  cv::Mat kernel = cv::Mat(full_kernel_size_, full_kernel_size_, CV_8UC1, 1);
-  cv::Mat dilated_depth_image = inv_depth_image;
-  cv::dilate(inv_depth_image, dilated_depth_image, kernel);
+  cv::Mat diamond_kernel = 
+    cv::Mat::zeros(2 * diamond_kernel_size_ + 1, 2 * diamond_kernel_size_ + 1, CV_8UC1);
+  for(int i = -diamond_kernel_size_; i <=diamond_kernel_size_; i++)
+  {
+    int r = diamond_kernel_size_ - std::abs(i);
+    for(int j = -r; j <= r; j++)
+    {
+      int x = diamond_kernel_size_ + i;
+      int y = diamond_kernel_size_ + j;
+      diamond_kernel.at<uint8_t>(y, x) = 1;
+    }
+  }
+  cv::Mat final_image;
+  cv::dilate(inv_depth_image, final_image, diamond_kernel);
 
-  cv::Mat median_blured_image;
-  cv::medianBlur(dilated_depth_image, median_blured_image, 5);
-  cv::Mat gaussian_blured_image;
-  cv::GaussianBlur(median_blured_image, gaussian_blured_image, cv::Size(5, 5), 0.0);
+  cv::Mat full_kernel_5 = cv::Mat::ones(5, 5, CV_8UC1);
+  cv::morphologyEx(final_image, final_image, cv::MORPH_CLOSE, full_kernel_5);
+  
+  cv::Mat dilated_depth_image;
+  cv::Mat full_kernel_7 = cv::Mat::ones(7, 7, CV_8UC1);
+  cv::dilate(final_image, dilated_depth_image, full_kernel_7);
+
+  for(int u = 0; u < final_image.cols; u++)
+  {
+    for(int v = 0; v < final_image.rows; v++)
+    {
+      const float & depth = final_image.at<float>(v, u);
+      if (depth != 0) continue;
+      final_image.at<float>(v, u) = dilated_depth_image.at<float>(v, u);
+    }
+  }
+
+  cv::medianBlur(final_image, final_image, 5);
+  cv::Mat blurred_depth_image = final_image;
+  //cv::GaussianBlur(final_image, blurred_depth_image, cv::Size(5, 5), 0);
 
   depth_completion_image = cv::Mat::zeros(cam_info->width, cam_info->height, CV_32FC1);
-  for(int u = 0; u < gaussian_blured_image.cols; u++)
+  for(int u = 0; u < final_image.cols; u++)
   {
-    for(int v = 0; v < gaussian_blured_image.rows; v++)
+    for(int v = 0; v < final_image.rows; v++)
     {
-      const float & depth = gaussian_blured_image.at<float>(v, u);
+      const float & depth = final_image.at<float>(v, u);
       if (depth == 0) continue;
-      depth_completion_image.at<float>(v, u) = 100 - depth;
+      depth_completion_image.at<float>(v, u) = 100 - blurred_depth_image.at<float>(v, u);
     }
   }
 }
