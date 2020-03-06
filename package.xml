@@ -1,5 +1,5 @@
 <package format="2">
-  <name>stereo_image</name>
+  <name>sensor_processing</name>
   <version>0.0.1</version>
   <description>
     Stereo depth image and lidar completition package
@@ -7,7 +7,7 @@
   <author>Simon Appel</author>
   <maintainer email="simonappel62@gmail.com">Simon Appel</maintainer>
   <license>MIT</license>
-  <url>https://github.com/appinho/SAStereoImage</url>
+  <url>https://github.com/appinho/SASensorProcessing</url>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>dynamic_reconfigure</build_depend>

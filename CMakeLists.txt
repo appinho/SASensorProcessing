@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(stereo_image)
+project(sensor_processing)
 
 find_package(catkin REQUIRED 
   dynamic_reconfigure
@@ -18,7 +18,7 @@ find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 generate_dynamic_reconfigure_options(
-  cfg/stereo_params.cfg
+  cfg/stereo_vision_params.cfg
   cfg/depth_completion_params.cfg
 )
 
@@ -28,7 +28,7 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(stereo src/nodes/stereo_node.cpp src/stereo.cpp)
+add_executable(stereo src/nodes/stereo_vision_node.cpp src/stereo_vision.cpp)
 target_link_libraries(stereo ${catkin_LIBRARIES})
 add_dependencies(stereo stereo_image_gencfg)
 
