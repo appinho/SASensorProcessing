@@ -15,7 +15,14 @@ ROS node to create pointcloud out of stereo images and complete sparse pointclou
   <img src="./docs/videos/depth_completion.gif">
 </p>
 
-## Usage
+## Run
+
+```
+roslaunch sensor_processing stereo_vision.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
+roslaunch sensor_processing depth_completion.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
+```
+
+## Background & Set up
 
 This is a side project of my main project: https://github.com/appinho/SARosPerceptionKitti  
 Orientate yourself there to set up the project and acquire the data.  
@@ -28,11 +35,6 @@ git clone https://github.com/appinho/SASensorProcessing.git
 cd ~/catkin_ws
 catkin_make
 source devel/setup.bash
-```
-
-```
-roslaunch sensor_processing stereo_vision.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
-roslaunch sensor_processing depth_completion.launch home_dir:=YOUR_HOME_DIRECTORY scenario:=0060
 ```
 
 ## Sources
