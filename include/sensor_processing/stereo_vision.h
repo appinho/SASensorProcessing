@@ -1,35 +1,35 @@
-#ifndef STEREO_H
-#define STEREO_H
+#ifndef STEREOVISION_H
+#define STEREOVISION_H
+
+#include "sensor_processing/StereoVisionParamsConfig.h"
 
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
-#include <stereo_image/StereoParamsConfig.h>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
-
-#include <image_geometry/stereo_camera_model.h>
-#include <stereo_msgs/DisparityImage.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <stereo_msgs/DisparityImage.h>
+#include <image_geometry/stereo_camera_model.h>
 
-namespace stereo_image
+namespace sensor_processing
 {
 
 using namespace sensor_msgs;
 using namespace stereo_msgs;
 using namespace message_filters::sync_policies;
 
-class Stereo
+class StereoVision
 {
  public:
   //! Constructor.
-  explicit Stereo(ros::NodeHandle nh);
+  explicit StereoVision(ros::NodeHandle nh);
 
  private:
-  void configCallback(stereo_image::StereoParamsConfig &config, uint32_t level);
+  void configCallback(sensor_processing::StereoVisionParamsConfig &config, uint32_t level);
 
   void callback(const ImageConstPtr& l_image_msg,
                 const CameraInfoConstPtr& l_info_msg,
@@ -59,7 +59,7 @@ class Stereo
   ros::Publisher pub_disparity_image_;;
   ros::Publisher pub_points2_;
 
-  dynamic_reconfigure::Server<stereo_image::StereoParamsConfig> dr_srv_;
+  dynamic_reconfigure::Server<sensor_processing::StereoVisionParamsConfig> dr_srv_;
 
   image_geometry::StereoCameraModel model_;
   cv::Ptr<cv::StereoBM> block_matcher_;
@@ -73,4 +73,4 @@ class Stereo
 };
 }
 
-#endif  // STEREO_H
+#endif  // STEREOVISION_H

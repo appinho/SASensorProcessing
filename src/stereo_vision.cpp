@@ -1,9 +1,10 @@
-#include <stereo_image/stereo.h>
+#include "sensor_processing/stereo_vision.h"
+
 #include <cv_bridge/cv_bridge.h>
 
-namespace stereo_image
+namespace sensor_processing
 {
-Stereo::Stereo(ros::NodeHandle nh) : 
+StereoVision::StereoVision(ros::NodeHandle nh) : 
   nh_(nh),
   exact_sync_(ExactPolicy(10),
     sub_left_image_, sub_left_camera_info_,
@@ -11,8 +12,8 @@ Stereo::Stereo(ros::NodeHandle nh) :
 {
   // Set up a dynamic reconfigure server.
   // Do this before parameter server, else some of the parameter server values can be overwritten.
-  dynamic_reconfigure::Server<stereo_image::StereoParamsConfig>::CallbackType cb;
-  cb = boost::bind(&Stereo::configCallback, this, _1, _2);
+  dynamic_reconfigure::Server<sensor_processing::StereoVisionParamsConfig>::CallbackType cb;
+  cb = boost::bind(&StereoVision::configCallback, this, _1, _2);
   dr_srv_.setCallback(cb);
 
   // Initialize node parameters from launch file or command line. Use a private node handle so that multiple instances
@@ -29,7 +30,7 @@ Stereo::Stereo(ros::NodeHandle nh) :
   sub_left_camera_info_.subscribe(nh_, "/kitti/camera_gray_left/camera_info", 1);
   sub_right_image_.subscribe(nh_, "/kitti/camera_gray_right/image_raw", 1);
   sub_right_camera_info_.subscribe(nh_, "/kitti/camera_gray_right/camera_info", 1);
-  exact_sync_.registerCallback(boost::bind(&Stereo::callback,
+  exact_sync_.registerCallback(boost::bind(&StereoVision::callback,
                                               this, _1, _2, _3, _4));
 
   pub_disparity_ = nh.advertise<DisparityImage>("/kitti/disparity", 1);
@@ -41,7 +42,7 @@ Stereo::Stereo(ros::NodeHandle nh) :
 
 }
 
-void Stereo::callback(const ImageConstPtr& l_image_msg,
+void StereoVision::callback(const ImageConstPtr& l_image_msg,
                       const CameraInfoConstPtr& l_info_msg,
                       const ImageConstPtr& r_image_msg,
                       const CameraInfoConstPtr& r_info_msg)
@@ -68,8 +69,8 @@ void Stereo::callback(const ImageConstPtr& l_image_msg,
   disp_msg->valid_window.height   = bottom - top;
 
   // Create cv::Mat views onto all buffers
-  const cv::Mat_<uint8_t> l_image = cv_bridge::toCvShare(l_image_msg, sensor_msgs::image_encodings::MONO8)->image;
-  const cv::Mat_<uint8_t> r_image = cv_bridge::toCvShare(r_image_msg, sensor_msgs::image_encodings::MONO8)->image;
+  const cv::Mat_<uint8_t> l_image = cv_bridge::toCvShare(l_image_msg, image_encodings::MONO8)->image;
+  const cv::Mat_<uint8_t> r_image = cv_bridge::toCvShare(r_image_msg, image_encodings::MONO8)->image;
 
   // Perform block matching to find the disparities
   // TODO PASS MODEL_
@@ -110,7 +111,7 @@ void Stereo::callback(const ImageConstPtr& l_image_msg,
   
 }
 
-void Stereo::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rect,
+void StereoVision::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rect,
                               DisparityImage& disparity)
 {
 
@@ -123,10 +124,10 @@ void Stereo::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rec
   //sg_block_matcher_->compute(left_rect, right_rect, disparity16_);
 
   // Fill in DisparityImage image data, converting to 32-bit float
-  sensor_msgs::Image& dimage = disparity.image;
+  Image& dimage = disparity.image;
   dimage.height = disparity16_.rows;
   dimage.width = disparity16_.cols;
-  dimage.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+  dimage.encoding = image_encodings::TYPE_32FC1;
   dimage.step = dimage.width * sizeof(float);
   dimage.data.resize(dimage.step * dimage.height);
   cv::Mat_<float> dmat(dimage.height, dimage.width, (float*)&dimage.data[0], dimage.step);
@@ -136,7 +137,7 @@ void Stereo::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rec
   ROS_ASSERT(dmat.data == &dimage.data[0]);
   /// @todo is_bigendian? :)
 
-  // Stereo parameters
+  // StereoVision parameters
   disparity.f = model_.right().fx();
   disparity.T = model_.baseline();
 
@@ -148,13 +149,13 @@ void Stereo::processDisparity(const cv::Mat& left_rect, const cv::Mat& right_rec
   disparity.delta_d = inv_dpp;
 }
 
-void Stereo::processPoints2(const DisparityImage& disparity,
+void StereoVision::processPoints2(const DisparityImage& disparity,
                             const cv::Mat& color, const std::string& encoding,
                             PointCloud2& points)
 {
   
   // Calculate dense point cloud
-  const sensor_msgs::Image& dimage = disparity.image;
+  const Image& dimage = disparity.image;
   const cv::Mat_<float> dmat(dimage.height, dimage.width, (float*)&dimage.data[0], dimage.step);
   model_.projectDisparityImageTo3d(dmat, dense_points_, true);
 
@@ -165,19 +166,19 @@ void Stereo::processPoints2(const DisparityImage& disparity,
   points.fields[0].name = "x";
   points.fields[0].offset = 0;
   points.fields[0].count = 1;
-  points.fields[0].datatype = sensor_msgs::PointField::FLOAT32;
+  points.fields[0].datatype = PointField::FLOAT32;
   points.fields[1].name = "y";
   points.fields[1].offset = 4;
   points.fields[1].count = 1;
-  points.fields[1].datatype = sensor_msgs::PointField::FLOAT32;
+  points.fields[1].datatype = PointField::FLOAT32;
   points.fields[2].name = "z";
   points.fields[2].offset = 8;
   points.fields[2].count = 1;
-  points.fields[2].datatype = sensor_msgs::PointField::FLOAT32;
+  points.fields[2].datatype = PointField::FLOAT32;
   points.fields[3].name = "rgb";
   points.fields[3].offset = 12;
   points.fields[3].count = 1;
-  points.fields[3].datatype = sensor_msgs::PointField::FLOAT32;
+  points.fields[3].datatype = PointField::FLOAT32;
   //points.is_bigendian = false; ???
   points.point_step = 16;
   points.row_step = points.point_step * points.width;
@@ -203,7 +204,7 @@ void Stereo::processPoints2(const DisparityImage& disparity,
   }
 
   // Fill in color
-  namespace enc = sensor_msgs::image_encodings;
+  namespace enc = image_encodings;
   i = 0;
   if (encoding == enc::MONO8) {
     for (int32_t u = 0; u < dense_points_.rows; ++u) {
@@ -253,14 +254,14 @@ void Stereo::processPoints2(const DisparityImage& disparity,
   
 }
 
-bool Stereo::isValidPoint(const cv::Vec3f& pt)
+bool StereoVision::isValidPoint(const cv::Vec3f& pt)
 {
   // Check both for disparities explicitly marked as invalid (where OpenCV maps pt.z to MISSING_Z)
   // and zero disparities (point mapped to infinity).
   return pt[2] != image_geometry::StereoCameraModel::MISSING_Z && !std::isinf(pt[2]);
 }
 
-void Stereo::configCallback(stereo_image::StereoParamsConfig &config, uint32_t level __attribute__((unused)))
+void StereoVision::configCallback(sensor_processing::StereoVisionParamsConfig &config, uint32_t level __attribute__((unused)))
 {
   num_disparities_ = convertNumDisparities(config.numDisparities);
   block_size_ = convertBlockSize(config.blockSize);
@@ -270,11 +271,11 @@ void Stereo::configCallback(stereo_image::StereoParamsConfig &config, uint32_t l
   block_matcher_ = cv::StereoBM::create(num_disparities_, block_size_);
 }
 
-int Stereo::convertNumDisparities(const int num_disparities){
+int StereoVision::convertNumDisparities(const int num_disparities){
   return 16 * num_disparities;
 }
 
-int Stereo::convertBlockSize(const int block_size){
+int StereoVision::convertBlockSize(const int block_size){
   return 2 * block_size + 5;
 }
 

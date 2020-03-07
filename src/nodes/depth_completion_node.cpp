@@ -1,13 +1,13 @@
-#include <stereo_image/stereo.h>
+#include "sensor_processing/depth_completion.h"
 
 int main(int argc, char **argv)
 {
   // Set up ROS.
-  ros::init(argc, argv, "stereo");
+  ros::init(argc, argv, "depth_completion");
   ros::NodeHandle nh;
 
   // Create a new node_example::Talker object.
-  stereo_image::Stereo node(nh);
+  sensor_processing::DepthCompletion node(nh);
 
   // Let ROS handle all callbacks.
   ros::spin();
