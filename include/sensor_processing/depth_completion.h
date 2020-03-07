@@ -30,29 +30,29 @@ class DepthCompletion
   explicit DepthCompletion(ros::NodeHandle nh);
 
  private:
-  void configCallback(sensor_processing::DepthCompletionParamsConfig &config, uint32_t level);
 
-  bool inImage(const CameraInfoConstPtr& cam_info, const int u, const int v);
-  void depthToCV8UC1(const cv::Mat& float_img, cv::Mat& mono8_img);
   void callback(const PointCloud2ConstPtr& pc_msg,
                 const CameraInfoConstPtr& l_info_msg,
                 const ImageConstPtr& l_image_msg);
-
-  void processDepthCompletion(
-    const CameraInfoConstPtr& cam_info, 
-    const cv::Mat depth_image, 
-    cv::Mat & depth_completion_image);
-
   void pointCloudToDepthImage(
     const PointCloud2ConstPtr& pc,
     const CameraInfoConstPtr& cam_info,
     cv::Mat& depth_image);
-  void depthImageToPointCloud(
+  void processDepthCompletion(
+    const CameraInfoConstPtr& cam_info,
     const cv::Mat depth_image,
+    cv::Mat & depth_completion_image);
+  void depthImageToRGBPointCloud(
+    const cv::Mat depth_image,
+    const ImageConstPtr& image_msg,
     const CameraInfoConstPtr& cam_info,
     PointCloud2 & pc);
 
-  int convertFullKernelSize(const int full_kernel_size);
+  bool inImage(const CameraInfoConstPtr& cam_info, const int u, const int v);
+  void depthToCV8UC1(const cv::Mat& float_img, cv::Mat& mono8_img);
+
+  void configCallback(sensor_processing::DepthCompletionParamsConfig &config, uint32_t level);
+  int convertKernelSize(const int full_kernel_size);
 
   
   ros::NodeHandle nh_;
@@ -72,8 +72,15 @@ class DepthCompletion
 
   tf::TransformListener listener_;
 
+  bool enable_;
   int diamond_kernel_size_;
   int full_kernel_size_;
+  int closure_kernel_size_;
+  int fill_kernel_size_;
+  int median_kernel_size_;
+  int blur_method_;
+  int blur_kernel_size_;
+  double bilateral_sigma_;
 };
 }
 

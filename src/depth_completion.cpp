@@ -20,12 +20,21 @@ DepthCompletion::DepthCompletion(ros::NodeHandle nh) :
   // Initialize node parameters from launch file or command line. Use a private node handle so that multiple instances
   // of the node can be run simultaneously while using different parameters.
   ros::NodeHandle pnh("~");
-  int diamond_kernel_size;
-  int full_kernel_size;
-  pnh.param("diamondKernelSize", diamond_kernel_size, diamond_kernel_size);
-  pnh.param("fullKernelSize", full_kernel_size, full_kernel_size);
-  diamond_kernel_size_ = diamond_kernel_size;
-  full_kernel_size_ = convertFullKernelSize(full_kernel_size);
+  int kernel;
+  pnh.param("diamondKernelSize", kernel, 2);
+  diamond_kernel_size_ = convertKernelSize(kernel);
+  pnh.param("fullKernelSize", kernel, 2);
+  full_kernel_size_ = convertKernelSize(kernel);
+  pnh.param("closureKernelSize", kernel, 2);
+  closure_kernel_size_ = convertKernelSize(kernel);
+  pnh.param("fillKernelSize", kernel, 2);
+  fill_kernel_size_ = convertKernelSize(kernel);
+  pnh.param("medianKernelSize", kernel, 2);
+  median_kernel_size_ = convertKernelSize(kernel);
+  pnh.param("blurMethod", blur_method_);
+  pnh.param("blurKernelSize", kernel, 1);
+  blur_kernel_size_ = convertKernelSize(kernel);
+  pnh.param("bilateralSigma", bilateral_sigma_, 10.0);
 
   sub_pointcloud_.subscribe(nh_, "/kitti/velo/pointcloud", 1);
   sub_left_color_camera_info_.subscribe(nh_, "/kitti/camera_color_left/camera_info", 1);
@@ -37,24 +46,6 @@ DepthCompletion::DepthCompletion(ros::NodeHandle nh) :
   pub_completion_image_ = nh_.advertise<Image>("/kitti/completed_image", 1);
   pub_completed_pointcloud_ = nh_.advertise<PointCloud2>("/kitti/completed_pointcloud", 1);
 
-}
-
-bool DepthCompletion::inImage(const CameraInfoConstPtr& cam_info, const int u, const int v)
-{
-  return(u >= 0 && u < cam_info->height && v >= 0 && v < cam_info->width);
-}
-
-void DepthCompletion::depthToCV8UC1(const cv::Mat& float_img, cv::Mat& mono8_img){
-  //Process images
-  if(mono8_img.rows != float_img.rows || mono8_img.cols != float_img.cols)
-  {
-    mono8_img = cv::Mat(float_img.size(), CV_8UC1);
-  }
-  //The following doesn't work if there are NaNs
-  double minVal, maxVal; 
-  minMaxLoc(float_img, &minVal, &maxVal);
-  ROS_INFO("Minimum/Maximum Depth in current image: %f/%f", minVal, maxVal);
-  cv::convertScaleAbs(float_img, mono8_img, 2.55, 0.0);
 }
 
 void DepthCompletion::callback(const PointCloud2ConstPtr& pc_msg,
@@ -86,7 +77,10 @@ void DepthCompletion::callback(const PointCloud2ConstPtr& pc_msg,
 
   PointCloud2 pc;
   pc.header.frame_id = pc_msg->header.frame_id;
-  depthImageToPointCloud(depth_completion_image, l_info_msg, pc);
+  if(enable_)
+    depthImageToRGBPointCloud(depth_completion_image, l_image_msg, l_info_msg, pc);
+  else
+    depthImageToRGBPointCloud(depth_image, l_image_msg, l_info_msg, pc);
   pc.header.stamp = ros::Time::now();
   pub_completed_pointcloud_.publish(pc);
   
@@ -158,26 +152,31 @@ void DepthCompletion::pointCloudToDepthImage(
   }
 }
 
-void DepthCompletion::depthImageToPointCloud(
+void DepthCompletion::depthImageToRGBPointCloud(
   const cv::Mat depth_image,
+  const ImageConstPtr& image_msg,
   const CameraInfoConstPtr& cam_info,
   PointCloud2 & pc)
 {
 
-  pcl::PointCloud<pcl::PointXYZ> pcl_img;
+  const cv::Mat_<uint8_t> cv_image = cv_bridge::toCvShare(image_msg, image_encodings::BGR8)->image;
+  pcl::PointCloud<pcl::PointXYZRGB> pcl_img;
   for(int u = 0; u < depth_image.cols; u++)
   {
     for(int v = 0; v < depth_image.rows; v++)
     {
       const float & depth = depth_image.at<float>(v, u);
       if (depth == 0) continue;
-      pcl::PointXYZ point;
+      pcl::PointXYZRGB point;
       const float img_x = u * depth;
       const float img_y = v * depth;
       const float img_z = depth;
       point.x = img_x;
       point.y = img_y;
       point.z = img_z;
+      point.r = cv_image.at<cv::Vec3b>(v, u)[2];
+      point.g = cv_image.at<cv::Vec3b>(v, u)[1];
+      point.b = cv_image.at<cv::Vec3b>(v, u)[0];
       pcl_img.points.push_back(point);
     }
   }
@@ -207,24 +206,12 @@ void DepthCompletion::depthImageToPointCloud(
   bool transformed = pcl_ros::transformPointCloud(target_frame, pc_cam, pc, listener_);
 }
 
-void DepthCompletion::configCallback(sensor_processing::DepthCompletionParamsConfig &config, uint32_t level)
-{
-  diamond_kernel_size_ = config.diamondKernelSize;
-  full_kernel_size_ = convertFullKernelSize(config.fullKernelSize);
-  ROS_DEBUG("Reconfigure Request");
-  ROS_DEBUG("diamondKernelSize %d", diamond_kernel_size_);
-  ROS_DEBUG("fullKernelSize %d", full_kernel_size_);
-}
-
-int DepthCompletion::convertFullKernelSize(const int full_kernel_size){
-  return 2 * full_kernel_size + 1;
-}
-
 void DepthCompletion::processDepthCompletion(
   const CameraInfoConstPtr& cam_info, 
-  const cv::Mat depth_image, 
+  const cv::Mat depth_image,
   cv::Mat & depth_completion_image)
 {
+  // 1. Depth Inversion
   cv::Mat inv_depth_image = cv::Mat::zeros(cam_info->width, cam_info->height, CV_32FC1);
   for(int u = 0; u < depth_image.cols; u++)
   {
@@ -236,52 +223,138 @@ void DepthCompletion::processDepthCompletion(
     }
   }
 
-  cv::Mat diamond_kernel = 
-    cv::Mat::zeros(2 * diamond_kernel_size_ + 1, 2 * diamond_kernel_size_ + 1, CV_8UC1);
-  for(int i = -diamond_kernel_size_; i <=diamond_kernel_size_; i++)
-  {
-    int r = diamond_kernel_size_ - std::abs(i);
-    for(int j = -r; j <= r; j++)
+  // 2. Custom Kernel Dilation
+  // TODO: Move kernel to constructor once parameter are fix
+  cv::Mat dilated_depth_image_1;
+  if(diamond_kernel_size_){
+    cv::Mat diamond_kernel = 
+      cv::Mat::zeros(convertKernelSize(diamond_kernel_size_), 
+        convertKernelSize(diamond_kernel_size_ ), CV_8UC1);
+    for(int i = -diamond_kernel_size_; i <=diamond_kernel_size_; i++)
     {
-      int x = diamond_kernel_size_ + i;
-      int y = diamond_kernel_size_ + j;
-      diamond_kernel.at<uint8_t>(y, x) = 1;
+      int r = diamond_kernel_size_ - std::abs(i);
+      for(int j = -r; j <= r; j++)
+      {
+        int x = diamond_kernel_size_ + i;
+        int y = diamond_kernel_size_ + j;
+        diamond_kernel.at<uint8_t>(y, x) = 1;
+      }
     }
+    cv::dilate(inv_depth_image, dilated_depth_image_1, diamond_kernel);
   }
-  cv::Mat final_image;
-  cv::dilate(inv_depth_image, final_image, diamond_kernel);
+  else{
+    dilated_depth_image_1 = inv_depth_image;
+  }
 
-  cv::Mat full_kernel_5 = cv::Mat::ones(5, 5, CV_8UC1);
-  cv::morphologyEx(final_image, final_image, cv::MORPH_CLOSE, full_kernel_5);
+  // 3. Small Hole Closure
+  cv::Mat dilated_depth_image_2;
+  if(closure_kernel_size_ > 0){  
+    cv::Mat closure_kernel = cv::Mat::ones(
+      closure_kernel_size_, closure_kernel_size_, CV_8UC1);
+    cv::morphologyEx(dilated_depth_image_1, dilated_depth_image_2, 
+      cv::MORPH_CLOSE, closure_kernel);
+  }
+  else{
+    dilated_depth_image_2 = dilated_depth_image_1;
+  }
   
-  cv::Mat dilated_depth_image;
-  cv::Mat full_kernel_7 = cv::Mat::ones(7, 7, CV_8UC1);
-  cv::dilate(final_image, dilated_depth_image, full_kernel_7);
-
-  for(int u = 0; u < final_image.cols; u++)
-  {
-    for(int v = 0; v < final_image.rows; v++)
+  // 4. Small Hole Fill
+  cv::Mat empty_depth_image;
+  if(fill_kernel_size_ > 0){
+    cv::Mat fill_kernel = cv::Mat::ones(
+      fill_kernel_size_, fill_kernel_size_, CV_8UC1);
+    cv::dilate(dilated_depth_image_2, empty_depth_image, fill_kernel);
+    for(int u = 0; u < dilated_depth_image_2.cols; u++)
     {
-      const float & depth = final_image.at<float>(v, u);
-      if (depth != 0) continue;
-      final_image.at<float>(v, u) = dilated_depth_image.at<float>(v, u);
+      for(int v = 0; v < dilated_depth_image_2.rows; v++)
+      {
+        const float & depth = dilated_depth_image_2.at<float>(v, u);
+        if (depth != 0) continue;
+        dilated_depth_image_2.at<float>(v, u) = empty_depth_image.at<float>(v, u);
+      }
     }
   }
 
-  cv::medianBlur(final_image, final_image, 5);
-  cv::Mat blurred_depth_image = final_image;
-  //cv::GaussianBlur(final_image, blurred_depth_image, cv::Size(5, 5), 0);
+  // 5. Extension to top of frame
+  // 6. Large Hole Fill
 
+  // 7. Blurring
+  cv::Mat blurred_depth_image;
+  if(median_kernel_size_ > 0){
+    cv::medianBlur(dilated_depth_image_2, blurred_depth_image, median_kernel_size_);
+  }
+  else{
+    blurred_depth_image = dilated_depth_image_2;
+  }
+  cv::Mat final_depth_image;
+  if(blur_method_ == 2){
+    cv::bilateralFilter(blurred_depth_image, final_depth_image, blur_kernel_size_, 
+      bilateral_sigma_, bilateral_sigma_);
+  }
+  else if(blur_method_ == 1){
+    cv::GaussianBlur(blurred_depth_image, final_depth_image, 
+      cv::Size(blur_kernel_size_, blur_kernel_size_), 0);
+  }
+  else{
+    final_depth_image = blurred_depth_image;
+  }
+
+  // 8. Depth Inversion
   depth_completion_image = cv::Mat::zeros(cam_info->width, cam_info->height, CV_32FC1);
-  for(int u = 0; u < final_image.cols; u++)
+  for(int u = 0; u < final_depth_image.cols; u++)
   {
-    for(int v = 0; v < final_image.rows; v++)
+    for(int v = 0; v < final_depth_image.rows; v++)
     {
-      const float & depth = final_image.at<float>(v, u);
+      const float & depth = final_depth_image.at<float>(v, u);
       if (depth == 0) continue;
-      depth_completion_image.at<float>(v, u) = 100 - blurred_depth_image.at<float>(v, u);
+      depth_completion_image.at<float>(v, u) = 100 - final_depth_image.at<float>(v, u);
     }
   }
+}
+
+bool DepthCompletion::inImage(const CameraInfoConstPtr& cam_info, const int u, const int v)
+{
+  return(u >= 0 && u < cam_info->height && v >= 0 && v < cam_info->width);
+}
+
+void DepthCompletion::depthToCV8UC1(const cv::Mat& float_img, cv::Mat& mono8_img){
+  //Process images
+  if(mono8_img.rows != float_img.rows || mono8_img.cols != float_img.cols)
+  {
+    mono8_img = cv::Mat(float_img.size(), CV_8UC1);
+  }
+  //The following doesn't work if there are NaNs
+  double minVal, maxVal; 
+  minMaxLoc(float_img, &minVal, &maxVal);
+  ROS_INFO("Minimum/Maximum Depth in current image: %f/%f", minVal, maxVal);
+  cv::convertScaleAbs(float_img, mono8_img, 2.55, 0.0);
+}
+
+void DepthCompletion::configCallback(sensor_processing::DepthCompletionParamsConfig &config, uint32_t level)
+{
+  enable_ = config.enable;
+  diamond_kernel_size_ = config.diamondKernelSize;
+  full_kernel_size_ = convertKernelSize(config.fullKernelSize);
+  closure_kernel_size_ = convertKernelSize(config.closureKernelSize);
+  fill_kernel_size_ = convertKernelSize(config.fillKernelSize);
+  median_kernel_size_ = convertKernelSize(config.medianKernelSize);
+  blur_method_ = config.blurMethod;
+  blur_kernel_size_ = convertKernelSize(config.blurKernelSize);
+  bilateral_sigma_ = config.bilateralSigma;
+  ROS_INFO("Reconfigure Request");
+  ROS_INFO("enable %d", enable_);
+  ROS_INFO("diamondKernelSize %d", diamond_kernel_size_);
+  ROS_INFO("fullKernelSize %d", full_kernel_size_);
+  ROS_INFO("closureKernelSize %d", closure_kernel_size_);
+  ROS_INFO("fillKernelSize %d", fill_kernel_size_);
+  ROS_INFO("medianKernelSize %d", median_kernel_size_);
+  ROS_INFO("blurMethod %d", blur_method_);
+  ROS_INFO("blurKernelSize %d", blur_kernel_size_);
+  ROS_INFO("bilateralSigma %f", bilateral_sigma_);
+}
+
+int DepthCompletion::convertKernelSize(const int kernel_size){
+  return 2 * kernel_size + 1;
 }
 
 }
