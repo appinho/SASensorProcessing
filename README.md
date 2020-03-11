@@ -12,7 +12,7 @@ ROS node to create pointcloud out of stereo images and complete sparse pointclou
 ### Depth Completion
 
 <p align="center">
-  <img src="./docs/images/depth_completion.png">
+  <img src="./docs/videos/depth_completion.gif">
 </p>
 
 

@@ -74,7 +74,6 @@ void DepthCompletion::callback(const PointCloud2ConstPtr& pc_msg,
   cv_bridge_depth_completion_image.header.stamp = l_info_msg->header.stamp;
   pub_completion_image_.publish(cv_bridge_depth_completion_image.toImageMsg());
 
-
   PointCloud2 pc;
   pc.header.frame_id = pc_msg->header.frame_id;
   if(enable_)
